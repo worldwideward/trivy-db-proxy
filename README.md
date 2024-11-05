@@ -13,3 +13,7 @@ docker run --rm -ti \
         -e ORAS_REGISTRY_PASSWORD=xxxx \
         trivy-db-proxy
 ```
+
+## Resources
+
+To work with OCI artifacts, the container depends on [ORAS](https://oras.land/docs/installation)
