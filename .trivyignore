@@ -1,0 +1,4 @@
+## Trivy vulnerability whitelist
+# oras Go binary
+CVE-2024-24790
+CVE-2024-34156

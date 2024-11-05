@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: trivy-db-proxy
+spec:
+  schedule: "0 5 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 300
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: trivy-db-proxy
+            image: oci.example.com/trivy-db-proxy:latest
+            imagePullPolicy: Always
+            env:
+            - name: ORAS_REGISTRY_HOST
+              value: "oci.example.com"
+            - name: ORAS_REGISTRY_USERNAME
+              value: "ociuser"
+            - name: ORAS_REGISTRY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oras-registry
+                  key: password
