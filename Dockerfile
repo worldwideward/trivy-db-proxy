@@ -13,6 +13,7 @@ RUN cd /opt \
 	&& chown nobody:nobody /tmp /.docker
 
 COPY proxy-trivy-dbs.sh /bin/proxy-trivy-dbs
+COPY acr-oauth.sh /bin/acr-oauth
 
 USER nobody
 

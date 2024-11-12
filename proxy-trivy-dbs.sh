@@ -2,7 +2,6 @@
 #
 
 TMP_DIR="/tmp/oras"
-DEBUG="False"
 
 ARTIFACTS=(
 "trivy-db:2"
@@ -31,8 +30,6 @@ check_oras_install() {
 }
 
 authenticate_private_registry() {
-
-	registry=$1
 
 	echo "$ORAS_REGISTRY_PASSWORD" | oras login $ORAS_REGISTRY_HOST --username $ORAS_REGISTRY_USERNAME --password-stdin >> /dev/null
 	result=$?
@@ -77,7 +74,6 @@ download_artifact() {
 			exit 1
 		fi
 	done
-
 }
 
 upload_artifacts() {
@@ -85,12 +81,44 @@ upload_artifacts() {
 	destination=$1
 	artifact=$2
 
+	if [ "$DEBUG" == "True" ]; then
+		echo "Destination: $destination"
+		echo "Artifact: $artifact"
+	fi
+
 	oras push $destination $artifact
+	result=$?
+	while [ "$result" != 0 ]; do
+		sleep $wait_seconds
+		echo "[ERROR] Failed to upload artifact '$artifact' to '$destination', retrying in $wait_seconds seconds"
+		oras push $destination $artifact 
+
+		result=$?
+		retries=$(expr $retries + 1)
+
+		if [ "$retries" == 3 ]; then
+			wait_seconds=$(expr $wait_seconds \* 2)
+			echo "[ERROR] Increasing retry frequency to $wait_seconds seconds"
+		fi
+		if [ "$retries" == 6 ]; then
+			wait_seconds=$(expr $wait_seconds \* 2)
+			echo "[ERROR] Increasing retry frequency to $wait_seconds seconds"
+		fi
+		if [ "$retries" == 10 ]; then
+			echo "[ERROR] Retries exhausted"
+			exit 1
+		fi
+	done
 }
 
 main() {
 
 	check_oras_install
+
+	if [ "$AZURE_WORKLOAD_IDENTITIES" == "True" ]; then
+		
+		export ORAS_REGISTRY_PASSWORD=$(acr-oauth)
+	fi
 
 	authenticate_private_registry
 
@@ -99,6 +127,12 @@ main() {
 
 	for index in ${!ARTIFACTS[@]}; do
 
+		download_artifact "$SOURCE_REPOSITORY/${ARTIFACTS[$index]}"
+
+		db_name=$(ls -th $TMP_DIR | head -1)
+
+		upload_artifacts "$DESTINATION_REPOSITORY/${ARTIFACTS[$index]}" "$db_name:${MEDIA_TYPES[$index]}"
+
 		if [ "$DEBUG" == "True" ]; then
 			echo "Artifact ID: $index"
 			echo "Database: $db_name"
@@ -106,12 +140,6 @@ main() {
 			echo "Artifact: ${ARTIFACTS[$index]}"
 			echo "Media type: ${MEDIA_TYPES[$index]}"
 		fi
-
-		download_artifact "$SOURCE_REPOSITORY/${ARTIFACTS[$index]}"
-
-		db_name=$(ls -th $TMP_DIR | head -1)
-
-		upload_artifacts "$DESTINATION_REPOSITORY/${ARTIFACTS[$index]}" "$db_name:${MEDIA_TYPES[$index]}"
 	done
 }
 
