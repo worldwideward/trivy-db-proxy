@@ -12,6 +12,7 @@ spec:
         metadata:
           labels:
             app.kubernetes.io/name: "trivy-db-proxy"
+            azure.workload.identity/use: "true"
         spec:
           serviceAccountName: trivy-db-proxy
           restartPolicy: Never
@@ -21,15 +22,10 @@ spec:
             imagePullPolicy: Always
             env:
             - name: ORAS_REGISTRY_HOST
-              value: "oci.example.com"
+              value: "myregistry.azurecr.io"
             - name: ORAS_REGISTRY_USERNAME
-              value: "oci-user"
+              value: "00000000-0000-0000-0000-000000000000"
             - name: DEBUG
               value: "False"
             - name: AZURE_WORKLOAD_IDENTITIES
-              value: "False"
-            - name: ORAS_REGISTRY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: oras-registry
-                  key: password
+              value: "True"
